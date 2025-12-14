@@ -1,0 +1,106 @@
+﻿@page "/employees"
+@rendermode InteractiveServer
+@inject IDataService dataService
+@inject NavigationManager navigationManager
+@attribute [Authorize]
+
+<PageTitle>Сотрудники</PageTitle>
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-dark">Сотрудники</h1>
+        <button class="btn btn-primary" @onclick="AddEmployee">Добавить сотрудника</button>
+    </div>
+
+    @if (employees == null)
+    {
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+        </div>
+    }
+    else if (employees.Count == 0)
+    {
+        <div class="alert alert-info">Нет сотрудников. Добавьте первого сотрудника!</div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var employee in employees)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-secondary shadow-sm">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0">@employee.Name</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text mb-2">
+                                <strong>Должность:</strong> @employee.Position
+                            </p>
+                            <p class="card-text mb-2">
+                                <strong>Отдел:</strong> @employee.Department
+                            </p>
+                            <p class="card-text">
+                                <strong>Дата найма:</strong> @employee.HireDate.ToString("dd.MM.yyyy")
+                            </p>
+                        </div>
+                        <div class="card-footer bg-light border-secondary">
+                            <a class="btn btn-sm btn-primary" href="@($"employees/{employee.Id}")">Редактировать</a>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="async () => await DeleteEmployee(employee.Id)">Удалить</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="mt-5 p-4 bg-light border border-secondary rounded">
+            <h5 class="text-dark mb-3">Статистика</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <p class="mb-0">
+                        <strong>Всего сотрудников:</strong>
+                        <span class="badge bg-primary">@employees.Count</span>
+                    </p>
+                </div>
+                <div class="col-md-8">
+                    <p class="mb-0">
+                        <strong>По отделам:</strong>
+                        @foreach (var dept in employees.Select(e => e.Department).Distinct())
+                        {
+                            <span class="badge bg-secondary ms-2">@dept: @employees.Count(e => e.Department == dept)</span>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Employee>? employees;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEmployees();
+    }
+
+    private async Task LoadEmployees()
+    {
+        employees = (await dataService.GetAllEmployeesAsync()).ToList();
+    }
+
+    private void AddEmployee()
+    {
+        navigationManager.NavigateTo("employees/add");
+    }
+
+    private async Task DeleteEmployee(int id)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "Вы уверены, что хотите удалить сотрудника?"))
+        {
+            await dataService.DeleteEmployeeAsync(id);
+            await LoadEmployees();
+        }
+    }
+
+    @inject IJSRuntime JSRuntime;
+}

@@ -1,0 +1,392 @@
+﻿@page "/reports"
+@rendermode InteractiveServer
+@inject IDataService dataService
+@attribute [Authorize]
+
+<PageTitle>Отчёты</PageTitle>
+
+<div class="container mt-5">
+    <h1 class="text-dark mb-4">Отчёты и аналитика</h1>
+
+    <!-- КНОПКИ ВКЛАДОК -->
+    <div class="btn-group mb-4" role="group">
+        <button type="button" class="btn @(activeTab == "stock" ? "btn-primary" : "btn-outline-primary")" @onclick='() => SelectTab("stock")'>
+            Остатки товаров
+        </button>
+        <button type="button" class="btn @(activeTab == "sales" ? "btn-primary" : "btn-outline-primary")" @onclick='() => SelectTab("sales")'>
+            Продажи
+        </button>
+        <button type="button" class="btn @(activeTab == "analytics" ? "btn-primary" : "btn-outline-primary")" @onclick='() => SelectTab("analytics")'>
+            Аналитика
+        </button>
+    </div>
+
+    <!-- ТАБ 1: ОСТАТКИ ТОВАРОВ -->
+    @if (activeTab == "stock")
+    {
+        <div>
+            <h3 class="text-dark mb-4">Отчёт об остатках товаров</h3>
+
+            @if (stockReport == null)
+            {
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+            }
+            else
+            {
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-secondary shadow-sm h-100">
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="mb-0 small">Всего товаров</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h2 class="text-primary display-5">@stockReport.Count()</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-secondary shadow-sm h-100">
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="mb-0 small">Общая стоимость</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h2 class="text-primary">@stockReport.Sum(r => r.TotalValue).ToString("C")</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-secondary shadow-sm h-100">
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="mb-0 small">Товаров мало</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h2 class="text-primary display-5">@stockReport.Count(r => r.CurrentStock <= 10)</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-secondary shadow-sm h-100">
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="mb-0 small">Критически мало</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h2 class="text-primary display-5">@stockReport.Count(r => r.CurrentStock == 0)</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover border-secondary">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Название</th>
+                                <th>Категория</th>
+                                <th>Остаток (шт.)</th>
+                                <th>Цена за ед.</th>
+                                <th>Общая стоимость</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in stockReport)
+                            {
+                                <tr>
+                                    <td><strong>@item.ProductName</strong></td>
+                                    <td>@item.Category</td>
+                                    <td>
+                                        <span class="badge @GetStockBadge(item.CurrentStock)">
+                                            @item.CurrentStock шт.
+                                        </span>
+                                    </td>
+                                    <td>@item.Price.ToString("C")</td>
+                                    <td>@item.TotalValue.ToString("C")</td>
+                                    <td>
+                                        @if (item.CurrentStock == 0)
+                                        {
+                                            <span class="badge bg-danger">Нет в наличии</span>
+                                        }
+                                        else if (item.CurrentStock <= 10)
+                                        {
+                                            <span class="badge bg-warning text-dark">Мало</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">В наличии</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-secondary">
+                                <th colspan="2">ИТОГО</th>
+                                <th>@stockReport.Sum(r => r.CurrentStock) шт.</th>
+                                <th></th>
+                                <th><strong>@stockReport.Sum(r => r.TotalValue).ToString("C")</strong></th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- ТАБ 2: ПРОДАЖИ -->
+    @if (activeTab == "sales")
+    {
+        <div>
+            <h3 class="text-dark mb-4">Отчёт о продажах</h3>
+
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label class="form-label">Дата начала</label>
+                        <input type="date" class="form-control border-secondary" @bind="startDate" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label class="form-label">Дата окончания</label>
+                        <input type="date" class="form-control border-secondary" @bind="endDate" />
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" @onclick="LoadSalesReport">Загрузить отчёт</button>
+                </div>
+            </div>
+
+            @if (salesReport != null)
+            {
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card border-secondary shadow-sm">
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="mb-0 small">Общая выручка</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h2 class="text-primary">@totalSales.ToString("C")</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-secondary shadow-sm">
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="mb-0 small">Товаров продано</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h2 class="text-primary display-5">@salesReport.Sum(r => r.QuantitySold) шт.</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-secondary shadow-sm">
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="mb-0 small">Позиций</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h2 class="text-primary display-5">@salesReport.Count()</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover border-secondary">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Товар</th>
+                                <th>Продано (шт.)</th>
+                                <th>Выручка</th>
+                                <th>Средняя цена</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sale in salesReport.OrderByDescending(s => s.Revenue))
+                            {
+                                <tr>
+                                    <td><strong>@sale.ProductName</strong></td>
+                                    <td>@sale.QuantitySold шт.</td>
+                                    <td>@sale.Revenue.ToString("C")</td>
+                                    <td>@(sale.Revenue / sale.QuantitySold).ToString("C")</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-secondary">
+                                <th>ИТОГО</th>
+                                <th>@salesReport.Sum(r => r.QuantitySold) шт.</th>
+                                <th><strong>@totalSales.ToString("C")</strong></th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+            else if (reportLoaded)
+            {
+                <div class="alert alert-info">Нет продаж за выбранный период</div>
+            }
+        </div>
+    }
+
+    <!-- ТАБ 3: АНАЛИТИКА -->
+    @if (activeTab == "analytics")
+    {
+        <div>
+            <h3 class="text-dark mb-4">Аналитика</h3>
+
+            @if (stockReport != null)
+            {
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="card border-secondary shadow-sm h-100">
+                            <div class="card-header bg-light border-secondary">
+                                <h5 class="mb-0 text-dark">Распределение по категориям</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Категория</th>
+                                            <th>Товаров</th>
+                                            <th>Стоимость</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var category in stockReport.GroupBy(r => r.Category))
+                                        {
+                                            <tr>
+                                                <td>@category.Key</td>
+                                                <td>@category.Count()</td>
+                                                <td>@category.Sum(r => r.TotalValue).ToString("C")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-4">
+                        <div class="card border-secondary shadow-sm h-100">
+                            <div class="card-header bg-light border-secondary">
+                                <h5 class="mb-0 text-dark">Критические остатки</h5>
+                            </div>
+                            <div class="card-body">
+                                @if (stockReport.Any(r => r.CurrentStock <= 10))
+                                {
+                                    <table class="table table-sm">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Товар</th>
+                                                <th>Остаток</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in stockReport.Where(r => r.CurrentStock <= 10).OrderBy(r => r.CurrentStock))
+                                            {
+                                                <tr>
+                                                    <td>@item.ProductName</td>
+                                                    <td>
+                                                        <span class="badge @(item.CurrentStock == 0 ? "bg-danger" : "bg-warning text-dark")">
+                                                            @item.CurrentStock шт.
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-info mb-0">Все товары в норме</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="card border-secondary shadow-sm">
+                            <div class="card-header bg-light border-secondary">
+                                <h5 class="mb-0 text-dark">Топ товаров по стоимости</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Место</th>
+                                            <th>Товар</th>
+                                            <th>Общая стоимость</th>
+                                            <th>% от всего</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @{
+                                            var topProducts = stockReport.OrderByDescending(r => r.TotalValue).Take(5);
+                                            var totalValue = stockReport.Sum(r => r.TotalValue);
+                                            int position = 1;
+                                        }
+                                        @foreach (var item in topProducts)
+                                        {
+                                            <tr>
+                                                <td>@position</td>
+                                                <td>@item.ProductName</td>
+                                                <td>@item.TotalValue.ToString("C")</td>
+                                                <td>@((item.TotalValue / totalValue * 100)).ToString("F1")%</td>
+                                            </tr>
+                                            position++;
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private string activeTab = "stock";
+    private IEnumerable<ProductStockReport>? stockReport;
+    private IEnumerable<SalesReport>? salesReport;
+    private decimal totalSales;
+    private bool reportLoaded = false;
+
+    private DateTime startDate = DateTime.Today.AddMonths(-1);
+    private DateTime endDate = DateTime.Today;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStockReport();
+    }
+
+    private void SelectTab(string tab)
+    {
+        activeTab = tab;
+    }
+
+    private async Task LoadStockReport()
+    {
+        stockReport = await dataService.GetStockReportAsync();
+    }
+
+    private async Task LoadSalesReport()
+    {
+        salesReport = await dataService.GetSalesReportAsync(startDate, endDate);
+        totalSales = await dataService.GetTotalSalesAsync(startDate, endDate);
+        reportLoaded = true;
+    }
+
+    private string GetStockBadge(int stock)
+    {
+        return stock <= 10 ? "bg-danger" : stock <= 30 ? "bg-warning" : "bg-success";
+    }
+}

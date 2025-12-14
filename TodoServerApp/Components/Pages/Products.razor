@@ -1,0 +1,117 @@
+﻿@page "/products"
+@rendermode InteractiveServer
+@inject IDataService dataService
+@inject NavigationManager navigationManager
+@attribute [Authorize]
+
+<PageTitle>Товары</PageTitle>
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-dark">Товары</h1>
+        <button class="btn btn-primary" @onclick="AddProduct">Новый товар</button>
+    </div>
+
+    @if (products == null)
+    {
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+        </div>
+    }
+    else if (products.Count == 0)
+    {
+        <div class="alert alert-info">Нет товаров. Добавьте первый товар!</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover border-secondary">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Название</th>
+                        <th>SKU</th>
+                        <th>Категория</th>
+                        <th>Цена</th>
+                        <th>Остаток</th>
+                        <th>Стоимость</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in products)
+                    {
+                        <tr>
+                            <td>@product.Name</td>
+                            <td><code>@product.SKU</code></td>
+                            <td>@product.Category</td>
+                            <td>@product.Price.ToString("C")</td>
+                            <td>
+                                <span class="badge @GetStockBadge(product.Stock)">
+                                    @product.Stock шт.
+                                </span>
+                            </td>
+                            <td>@(product.Stock* product.Price).ToString("C")</td>
+                            <td>
+                                <a class="btn btn-sm btn-primary" href="@($"products/{product.Id}")">Редактировать</a>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="async () => await DeleteProduct(product.Id)">Удалить</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4 p-4 bg-light border border-secondary rounded">
+            <h5 class="text-dark mb-3">Статистика</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">
+                        <strong>Всего товаров:</strong>
+                        <span class="badge bg-primary">@products.Count</span>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-0">
+                        <strong>Общая стоимость запасов:</strong>
+                        <span class="badge bg-secondary">@products.Sum(p => p.Stock * p.Price).ToString("C")</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Product>? products;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        products = (await dataService.GetAllProductsAsync()).ToList();
+    }
+
+    private void AddProduct()
+    {
+        navigationManager.NavigateTo("products/add");
+    }
+
+    private async Task DeleteProduct(int id)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "Вы уверены, что хотите удалить товар?"))
+        {
+            await dataService.DeleteProductAsync(id);
+            await LoadProducts();
+        }
+    }
+
+    private string GetStockBadge(int stock)
+    {
+        return stock <= 10 ? "bg-danger" : stock <= 30 ? "bg-warning" : "bg-success";
+    }
+
+    @inject IJSRuntime JSRuntime;
+}

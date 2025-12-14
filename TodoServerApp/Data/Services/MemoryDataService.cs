@@ -4,31 +4,98 @@ namespace TodoServerApp.Data.Services
 {
 	public class MemoryDataService : IDataService
 	{
-		public static IEnumerable<TaskItem> Tasks { get; } = [
-			new() { Id = 1, Title="Задача 1", Description="Описание задачи 1", CreatedDate=DateTime.Now },
-			new() { Id = 2, Title="Задача 2", Description="Описание задачи 2", CreatedDate=DateTime.Now },
-			new() { Id = 3, Title="Задача 3", Description="Описание задачи 3", CreatedDate=DateTime.Now },
-		];
+		// Заглушки для памяти
+		private static List<Product> Products { get; } = [];
+		private static List<Employee> Employees { get; } = [];
+		private static List<Operation> Operations { get; } = [];
 
-        public Task DeleteAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<TaskItem> GetTaskAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<IEnumerable<TaskItem>> GetAllAsync()
+		// ========== ТОВАРЫ ==========
+		public Task<IEnumerable<Product>> GetAllProductsAsync()
 		{
-			await Task.Delay(1000);
-			return await Task.FromResult(Tasks);
+			throw new NotImplementedException("Используй MSSQLDataService");
 		}
 
-        public Task SaveAsync(TaskItem item)
-        {
-            throw new NotImplementedException();
-        }
-    }
+		public Task<Product> GetProductAsync(int id)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		public Task SaveProductAsync(Product product)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		public Task DeleteProductAsync(int id)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		// ========== СОТРУДНИКИ ==========
+		public Task<IEnumerable<Employee>> GetAllEmployeesAsync()
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		public Task<Employee> GetEmployeeAsync(int id)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		public Task SaveEmployeeAsync(Employee employee)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		public Task DeleteEmployeeAsync(int id)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		// ========== ОПЕРАЦИИ ==========
+		public Task<IEnumerable<Operation>> GetAllOperationsAsync()
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		public Task<Operation> GetOperationAsync(int id)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		public Task SaveOperationAsync(Operation operation)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		public Task DeleteOperationAsync(int id)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		public Task<IEnumerable<Operation>> GetOperationsByProductAsync(int productId)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		public Task<IEnumerable<Operation>> GetOperationsByDateRangeAsync(DateTime startDate, DateTime endDate)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		// ========== ОТЧЁТЫ ==========
+		public Task<decimal> GetTotalSalesAsync(DateTime startDate, DateTime endDate)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		public Task<IEnumerable<ProductStockReport>> GetStockReportAsync()
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+
+		public Task<IEnumerable<SalesReport>> GetSalesReportAsync(DateTime startDate, DateTime endDate)
+		{
+			throw new NotImplementedException("Используй MSSQLDataService");
+		}
+	}
 }
