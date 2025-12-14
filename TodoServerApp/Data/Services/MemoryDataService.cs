@@ -20,7 +20,7 @@ namespace TodoServerApp.Data.Services
             throw new NotImplementedException();
         }
 
-        public async Task<IEnumerable<TaskItem>> GetTaskItemsAsync()
+        public async Task<IEnumerable<TaskItem>> GetAllAsync()
 		{
 			await Task.Delay(1000);
 			return await Task.FromResult(Tasks);

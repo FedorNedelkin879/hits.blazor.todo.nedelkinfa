@@ -5,7 +5,7 @@ namespace TodoServerApp.Data.Services
 {
     public class MSSQLDataService(ApplicationDbContext context) : IDataService
     {
-        public async Task<IEnumerable<TaskItem>> GetTaskItemsAsync()
+        public async Task<IEnumerable<TaskItem>> GetAllAsync()
         {
             return await context.TaskItems.ToArrayAsync();
         }
